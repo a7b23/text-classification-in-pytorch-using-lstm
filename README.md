@@ -4,4 +4,4 @@
 
 main.py does the training of the model
 
-testing.py generates the submission file on test set which can be submitted at this link https://www.kaggle.com/c/word2vec-nlp-tutorial/submissions?sortBy=date&group=all&page=1 to get the accuracy.
+testing.py generates the submission file on test set which can be submitted at the link https://www.kaggle.com/c/word2vec-nlp-tutorial/submissions?sortBy=date&group=all&page=1 to get the accuracy.
