@@ -7,6 +7,7 @@ from torch import optim
 import torch.nn.functional as F
 import pickle
 
+
 class wordIndex(object) :
 	def __init__(self) :
 		self.count = 0
