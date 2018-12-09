@@ -31,14 +31,26 @@ class Model(torch.nn.Module) :
 		x = F.log_softmax(x)
 		return x,lstm_h
 	def init_hidden(self) :
-		return (Variable(torch.zeros(1, 1, self.hidden_dim)),Variable(torch.zeros(1, 1, self.hidden_dim)))	
+		if use_cuda:
+			return (Variable(torch.zeros(1, 1, self.hidden_dim).cuda()),Variable(torch.zeros(1, 1, self.hidden_dim)).cuda())
+		else:
+			return (Variable(torch.zeros(1, 1, self.hidden_dim)),Variable(torch.zeros(1, 1, self.hidden_dim)))
 
 
-
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    use_cuda = True
+else:
+    device = torch.device("cpu")
+    use_cuda = False
+    
 
 vocabLimit = 50000
 max_sequence_len = 500
-model = Model(50,100)
+if use_cuda:
+	model = Model(50,100).cuda()
+else:
+	model = Model(50, 100)
 
 
 
@@ -65,10 +77,15 @@ for idx,lines in enumerate(f) :
 		if len(input_data) > max_sequence_len :
 				input_data = input_data[0:max_sequence_len]
 
-		input_data = Variable(torch.LongTensor(input_data))
+		if use_cuda:
+			input_data = Variable(torch.cuda.LongTensor(input_data))
+		else:
+			input_data = Variable(torch.LongTensor(input_data))
+		
 		hidden = model.init_hidden()
 		y_pred,_ = model(input_data,hidden)
-		pred1 = y_pred.data.max(1)[1].numpy()
-		f1.write(lines.split('\t')[0]+','+str(pred1[0][0])+'\n')
+		pred1 = y_pred.data.max(1)[1].cpu().numpy()
+		#print(pred1)
+		f1.write(lines.split('\t')[0]+','+str(pred1[0])+'\n')
 		
-f1.close()		
+f1.close()	

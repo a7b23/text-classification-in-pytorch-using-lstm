@@ -7,7 +7,6 @@ from torch import optim
 import torch.nn.functional as F
 import pickle
 
-
 class wordIndex(object) :
 	def __init__(self) :
 		self.count = 0
@@ -51,6 +50,13 @@ vocabLimit = 50000
 max_sequence_len = 500
 obj1 = wordIndex()
 
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    use_cuda = True
+else:
+    device = torch.device("cpu")
+    use_cuda = False
+    
 f = open('labeledTrainData.tsv').readlines()
 
 print('reading the lines')
@@ -82,10 +88,15 @@ class Model(torch.nn.Module) :
 		x = F.log_softmax(x)
 		return x,lstm_h
 	def init_hidden(self) :
-		return (Variable(torch.zeros(1, 1, self.hidden_dim)),Variable(torch.zeros(1, 1, self.hidden_dim)))	
+		if use_cuda:
+			return (Variable(torch.zeros(1, 1, self.hidden_dim)).cuda(),Variable(torch.zeros(1, 1, self.hidden_dim)).cuda())
+		else:
+			return (Variable(torch.zeros(1, 1, self.hidden_dim)),Variable(torch.zeros(1, 1, self.hidden_dim)))
 
-
-model = Model(50,100)
+if use_cuda:
+	model = Model(50,100).cuda()
+else:
+	model = Model(50,100)
 
 loss_function = nn.NLLLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
@@ -102,12 +113,22 @@ for i in range(epochs) :
 			data = lines.split('\t')[2]
 			data = normalizeString(data).strip()
 			input_data = [obj1.word_to_idx[word] for word in data.split(' ')]
+			#print("input data length ", len(input_data))
 			if len(input_data) > max_sequence_len :
 				input_data = input_data[0:max_sequence_len]
 
-			input_data = Variable(torch.LongTensor(input_data))
+			if use_cuda:
+				input_data = Variable(torch.cuda.LongTensor(input_data))
+			else:
+				input_data = Variable(torch.LongTensor(input_data))
+
 			target = int(lines.split('\t')[1])
-			target_data = Variable(torch.LongTensor([target]))
+
+			if use_cuda:
+				target_data = Variable(torch.cuda.LongTensor([target]))
+			else:
+				target_data = Variable(torch.LongTensor([target]))
+
 			hidden = model.init_hidden()
 			y_pred,_ = model(input_data,hidden)
 			model.zero_grad()
@@ -125,4 +146,3 @@ for i in range(epochs) :
 
 with open('dict.pkl','wb') as f :
 	pickle.dump(obj1.word_to_idx,f)
-
